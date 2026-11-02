@@ -3,7 +3,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Tests: Pytest](https://img.shields.io/badge/tests-79%20passed-brightgreen.svg)](./tests)
+[![Tests: Pytest](https://img.shields.io/badge/tests-91%20passed-brightgreen.svg)](./tests)
 
 A high-control, privacy-first Python conversational AI agent built to handle customer support for **Empório da Música** (a musical instruments specialty store in Campo Grande/MS). Developed for the **Artefact** AI Engineer technical challenge.
 
@@ -102,9 +102,20 @@ uv run emporio-agent --customer-id 1 --debug --message "Quais opções de violõ
 
 Inside the interactive CLI, use `/help`, `/customers` (list sample customer profiles), `/customer <id>` (switch authenticated session cleanly), `/debug` (toggle JSON telemetry inspector), `/reset` (wipe ephemeral session & PII vault), and `/exit`.
 
+### CLI Preview & Live Observability (`--debug`)
+
+1. **Real-Time Catalog, Active vs. Expired Promotions & PIX Non-Cumulativity:**
+   ![CLI Catalog and PIX Preview](./docs/assets/cli-catalog-and-pix.svg)
+
+2. **CPU Out-of-Scope Guardrail (`5+5` / Bhaskara), LGPD PII Masking (`Presidio`) & Zero-Trust Isolation:**
+   ![CLI LGPD Masking and Security Preview](./docs/assets/cli-lgpd-and-security.svg)
+
+3. **Customer Tone Analysis & Holiday Offline Ticket (`America/Campo_Grande`):**
+   ![CLI Holiday Escalation Ticket Preview](./docs/assets/cli-holiday-escalation.svg)
+
 ### Running Automated Tests & Linter
 
-The 79-test suite uses a deterministic mock LLM client for orchestrator tests and runs **100% offline without requiring an external API key**:
+The 91-test suite uses a deterministic mock LLM client for orchestrator tests and runs **100% offline without requiring an external API key**:
 
 ```bash
 # Run full test suite (unit, LGPD privacy, Polars anomalies, ChromaDB RAG, security, CLI)
@@ -183,11 +194,13 @@ artefact-aiengineer-project/
 ├── .env.example               # Environment configuration template
 ├── decisions/                 # Numbered Architecture Decision Records (ADR-0000 to ADR-0004)
 ├── documents/                 # Challenge operational CSVs and store policy PDF
+├── docs/assets/               # Rich CLI vector SVG terminal captures embedded in README
 ├── examples/                  # 5 end-to-end conversation transcripts (.md) with JSON traces
 ├── scripts/
-│   └── generate_examples.py   # Reproducible transcript generator (offline & --live modes)
+│   ├── generate_examples.py           # Reproducible transcript generator (offline & --live)
+│   └── generate_readme_screenshots.py # Rich CLI SVG screenshot renderer
 ├── src/emporio_agent/
-│   ├── config.py              # Typed Pydantic Settings
+│   ├── config.py              # Typed Pydantic Settings (OpenRouter & OpenAI compatible)
 │   ├── cli.py                 # Interactive Rich CLI & JSON observability inspector
 │   ├── domain/                # Typed domain models & America/Campo_Grande business hours
 │   ├── privacy/               # Custom PT-BR Presidio recognizers, allowlists & PII vault
@@ -196,7 +209,7 @@ artefact-aiengineer-project/
 │   ├── guardrails/            # Deterministic input validator & Semantic Router guardrails
 │   ├── tools/                 # Strict Pydantic function-calling schemas & JSON dispatcher
 │   └── agent/                 # Dynamic English System Prompt, session store & orchestrator
-└── tests/                     # 79 automated tests covering all functional & security layers
+└── tests/                     # 91 automated tests covering all functional & security layers
 ```
 
 ---
