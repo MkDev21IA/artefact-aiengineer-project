@@ -155,12 +155,16 @@ class EmporioAgentOrchestrator:
     def _get_openai_client(self) -> Any:
         if self._openai_client is not None:
             return self._openai_client
-        if not self._settings.openai_api_key.strip():
+        api_key = self._settings.effective_api_key
+        if not api_key:
             raise RuntimeError(
-                "OPENAI_API_KEY is not configured. Copy `.env.example` to `.env` and set "
-                "a valid OpenAI API key to run live LLM completions."
+                "No LLM API key configured. Copy `.env.example` to `.env` and set either "
+                "`OPENROUTER_API_KEY` (OpenRouter) or `OPENAI_API_KEY` (OpenAI)."
             )
-        self._openai_client = OpenAI(api_key=self._settings.openai_api_key)
+        client_kwargs: dict[str, Any] = {"api_key": api_key}
+        if self._settings.effective_base_url:
+            client_kwargs["base_url"] = self._settings.effective_base_url
+        self._openai_client = OpenAI(**client_kwargs)
         return self._openai_client
 
     def handle_message(
@@ -272,7 +276,7 @@ class EmporioAgentOrchestrator:
             tools_param = None if triggered_ticket is not None else self._tool_defs
 
             completion_kwargs: dict[str, Any] = {
-                "model": self._settings.openai_model,
+                "model": self._settings.effective_model,
                 "messages": request_messages,
                 "temperature": 0.2,
             }

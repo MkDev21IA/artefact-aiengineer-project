@@ -314,3 +314,28 @@ def test_sliding_window_history_never_orphans_tool_messages(
     hist = sess.get_openai_history()
     # First message in history must NEVER be an orphaned `role == "tool"`
     assert hist[0]["role"] == "user"
+
+
+def test_openrouter_and_openai_provider_resolution() -> None:
+    # Direct OpenAI key (isolated from any local `.env` file via `_env_file=None`)
+    s_openai = Settings(_env_file=None, openai_api_key="sk-proj-abc123", openrouter_api_key="")
+    assert s_openai.is_openrouter is False
+    assert s_openai.effective_base_url is None
+    assert s_openai.effective_model == "gpt-4o-mini"
+
+    # Dedicated OPENROUTER_API_KEY auto-configures base_url and `openai/` prefix
+    s_or = Settings(_env_file=None, openrouter_api_key="sk-or-v1-xyz789", openai_api_key="")
+    assert s_or.is_openrouter is True
+    assert s_or.effective_base_url == "https://openrouter.ai/api/v1"
+    assert s_or.effective_model == "openai/gpt-4o-mini"
+
+    # Pasting an `sk-or-` key into OPENAI_API_KEY also auto-routes safely to OpenRouter
+    s_or_fallback = Settings(
+        _env_file=None,
+        openai_api_key="sk-or-v1-fallback",
+        openrouter_api_key="",
+        openai_model="google/gemini-2.5-flash",
+    )
+    assert s_or_fallback.is_openrouter is True
+    assert s_or_fallback.effective_base_url == "https://openrouter.ai/api/v1"
+    assert s_or_fallback.effective_model == "google/gemini-2.5-flash"

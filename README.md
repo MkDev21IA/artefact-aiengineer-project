@@ -3,7 +3,7 @@
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
-[![Tests: Pytest](https://img.shields.io/badge/tests-78%20passed-brightgreen.svg)](./tests)
+[![Tests: Pytest](https://img.shields.io/badge/tests-79%20passed-brightgreen.svg)](./tests)
 
 A high-control, privacy-first Python conversational AI agent built to handle customer support for **Empório da Música** (a musical instruments specialty store in Campo Grande/MS). Developed for the **Artefact** AI Engineer technical challenge.
 
@@ -65,7 +65,7 @@ flowchart TD
 ### Prerequisites
 - **Python `3.12`** (pinned via [`.python-version`](./.python-version) for native `onnxruntime`, `chromadb`, and `spacy` wheel compatibility)
 - **[`uv`](https://docs.astral.sh/uv/)** package manager (recommended)
-- An API key configured in `.env` (`OPENAI_API_KEY`)
+- Either an **OpenRouter** API key (`OPENROUTER_API_KEY`) or an **OpenAI** API key (`OPENAI_API_KEY`) configured in `.env`
 
 ### Installation
 
@@ -79,7 +79,7 @@ uv sync --extra dev
 
 # 3. Configure environment variables
 cp .env.example .env
-# Edit .env and set OPENAI_API_KEY=sk-...
+# Edit .env and set OPENROUTER_API_KEY=sk-or-v1-... (or OPENAI_API_KEY=sk-...)
 ```
 
 > **Note:** On the very first execution, `FastEmbed` automatically downloads and caches the quantized multilingual ONNX embedding model (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, ~110 MB). Subsequent startups run completely offline on CPU in milliseconds.
@@ -104,7 +104,7 @@ Inside the interactive CLI, use `/help`, `/customers` (list sample customer prof
 
 ### Running Automated Tests & Linter
 
-The 78-test suite uses a deterministic mock LLM client for orchestrator tests and runs **100% offline without requiring an external API key**:
+The 79-test suite uses a deterministic mock LLM client for orchestrator tests and runs **100% offline without requiring an external API key**:
 
 ```bash
 # Run full test suite (unit, LGPD privacy, Polars anomalies, ChromaDB RAG, security, CLI)
@@ -123,7 +123,7 @@ Every major trade-off is documented as an Architecture Decision Record in [`deci
 1. **Custom Python Orchestrator vs. LangChain / LangGraph / Low-Code ([ADR-0001](./decisions/0001-custom-orchestrator-over-langchain.md)):**
    - Low-Code tools (`n8n`, `Flowise`) and heavy frameworks (`LangChain`, `LangGraph`) introduce opaque prompt wrappers and hidden state transitions. Implementing a ~250-line native orchestrator directly over the `openai` SDK and `pydantic` v2 provides exact control over token windowing, atomic `assistant(tool_calls)` + `tool` message pairing, deterministic escalation stops, and strict security boundaries.
 2. **Model & Embedding Strategy ([ADR-0003](./decisions/0003-local-guardrails-rag-and-polars-stack.md)):**
-   - **Chat Completion Model (`gpt-4o-mini` default, configurable via `OPENAI_MODEL`):** Low latency suitable for interactive messaging (aligning with the store's <5 min SLA), reliable multi-tool JSON schema adherence, strong Brazilian Portuguese fluency, and low per-turn cost.
+   - **Provider-Flexible Chat Completion (`OpenAI` & `OpenRouter` Compatible):** Uses the official `openai` SDK with automatic base-URL and model-ID resolution—supporting both direct OpenAI (`OPENAI_API_KEY`) and OpenRouter (`OPENROUTER_API_KEY` / `OPENAI_BASE_URL=https://openrouter.ai/api/v1`) seamlessly. Defaults to `gpt-4o-mini` (`openai/gpt-4o-mini` on OpenRouter) for low latency, strong `pt-BR` fluency, and reliable multi-tool JSON schema adherence.
    - **Shared Local Multilingual Embeddings (`FastEmbed`):** A single cached `paraphrase-multilingual-MiniLM-L12-v2` ONNX instance powers **both** `ChromaDB` RAG and `semantic-router` guardrails—cutting RAM usage in half and eliminating external embedding API latency/cost.
 3. **Hybrid Retrieval Architecture (`Polars` Repositories + Section-Aware `ChromaDB` RAG):**
    - **Structured Data (`Polars`):** Pricing, stock counts, promotions, and order tracking require exact filtering and arithmetic—never approximate vector similarity. Data access sits behind `CatalogRepository` and `OrderRepository` protocols so local CSVs in `documents/` can be swapped for BigQuery/Snowflake/PostgreSQL in production.
@@ -196,7 +196,7 @@ artefact-aiengineer-project/
 │   ├── guardrails/            # Deterministic input validator & Semantic Router guardrails
 │   ├── tools/                 # Strict Pydantic function-calling schemas & JSON dispatcher
 │   └── agent/                 # Dynamic English System Prompt, session store & orchestrator
-└── tests/                     # 78 automated tests covering all functional & security layers
+└── tests/                     # 79 automated tests covering all functional & security layers
 ```
 
 ---

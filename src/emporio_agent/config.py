@@ -7,6 +7,8 @@ from zoneinfo import ZoneInfo
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+OPENROUTER_DEFAULT_BASE_URL = "https://openrouter.ai/api/v1"
+
 
 class Settings(BaseSettings):
     """Centralized strongly typed configuration for the Emporio da Musica agent."""
@@ -19,11 +21,23 @@ class Settings(BaseSettings):
 
     openai_api_key: str = Field(
         default="",
-        description="OpenAI API key used by the custom orchestrator.",
+        description="OpenAI API key (also accepts `sk-or-...` OpenRouter keys).",
+    )
+    openrouter_api_key: str = Field(
+        default="",
+        description="Optional dedicated OpenRouter API key (`sk-or-v1-...`).",
+    )
+    openai_base_url: str | None = Field(
+        default=None,
+        description="Optional custom OpenAI-compatible base URL (e.g. OpenRouter, Ollama, vLLM).",
     )
     openai_model: str = Field(
         default="gpt-4o-mini",
-        description="Chat completion model used for reasoning and tool calling.",
+        description="Chat completion model ID (e.g. `gpt-4o-mini` or `openai/gpt-4o-mini`).",
+    )
+    openrouter_model: str | None = Field(
+        default=None,
+        description="Optional OpenRouter model override (e.g. `openai/gpt-4o-mini`).",
     )
     store_timezone: str = Field(
         default="America/Campo_Grande",
@@ -62,6 +76,41 @@ class Settings(BaseSettings):
     def tzinfo(self) -> ZoneInfo:
         """Return the configured store IANA timezone object."""
         return ZoneInfo(self.store_timezone)
+
+    @property
+    def effective_api_key(self) -> str:
+        """Resolve active API key preferring `OPENROUTER_API_KEY` or `OPENAI_API_KEY`."""
+        if self.openrouter_api_key.strip():
+            return self.openrouter_api_key.strip()
+        return self.openai_api_key.strip()
+
+    @property
+    def is_openrouter(self) -> bool:
+        """Return True when configured credentials or base URL target OpenRouter."""
+        if self.openrouter_api_key.strip():
+            return True
+        if self.effective_api_key.startswith("sk-or-"):
+            return True
+        return bool(self.openai_base_url and "openrouter.ai" in self.openai_base_url.lower())
+
+    @property
+    def effective_base_url(self) -> str | None:
+        """Resolve custom base URL, auto-routing to OpenRouter when an OpenRouter key is used."""
+        if self.openai_base_url and self.openai_base_url.strip():
+            return self.openai_base_url.strip()
+        if self.is_openrouter:
+            return OPENROUTER_DEFAULT_BASE_URL
+        return None
+
+    @property
+    def effective_model(self) -> str:
+        """Resolve model identifier, adding `openai/` prefix on OpenRouter when omitted."""
+        if self.is_openrouter and self.openrouter_model and self.openrouter_model.strip():
+            return self.openrouter_model.strip()
+        raw_model = self.openai_model.strip() or "gpt-4o-mini"
+        if self.is_openrouter and "/" not in raw_model:
+            return f"openai/{raw_model}"
+        return raw_model
 
 
 @lru_cache(maxsize=1)
