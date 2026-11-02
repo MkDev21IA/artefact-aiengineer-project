@@ -85,12 +85,20 @@ def test_explicit_cross_customer_snooping_is_blocked_at_input_layer() -> None:
 @pytest.mark.parametrize(
     "random_off_topic_query",
     [
+        "quanto é 5+5",
+        "5 + 5",
+        "Quanto dá 12 * 8?",
+        "O que é o Teorema de Bhaskara?",
+        "Me explica a fórmula de Bhaskara passo a passo",
+        "Quem foi Albert Einstein e o que é a teoria da relatividade?",
         "Qual é a receita de um bolo de chocolate fofinho de liquidificador?",
         "Quem ganhou o jogo do Flamengo ontem pelo campeonato brasileiro?",
         "Em quem eu devo votar para presidente nas próximas eleições?",
         "Escreva um script em Python para ordenar uma lista usando quicksort.",
         "Estou com febre alta e dor de garganta, qual antibiótico devo tomar?",
         "Vale a pena comprar Bitcoin ou investir no Tesouro Selic hoje?",
+        "Como consertar o motor do meu carro que está falhando?",
+        "Qual o melhor celular da Samsung para comprar hoje?",
     ],
 )
 def test_semantic_router_blocks_random_out_of_scope_topics(
@@ -131,6 +139,10 @@ def test_semantic_router_blocks_prompt_injection_and_jailbreaks(
         "Qual é o código de rastreamento do meu pedido?",
         "Sim, pode verificar",
         "4",
+        "No PIX",
+        "12x",
+        "Oi!",
+        "Takamine GD20",
     ],
 )
 def test_semantic_router_allows_store_queries_accessories_and_short_followups(

@@ -32,6 +32,46 @@ JAILBREAK_LEXICAL_RE = re.compile(
     r")",
 )
 
+# Standalone calculator / arithmetic expressions (e.g., "quanto é 5+5", "5 + 5?", "calcule 12 * 8")
+# Excludes legitimate payment installment expressions like "10x sem juros" or "R$ 1000"
+STANDALONE_MATH_RE = re.compile(
+    r"(?i)^\s*(?:(?:oi|ol[áa])[,\s!]*)?"
+    r"(?:quanto\s+(?:[eé]|d[áa]|fica)\s+|calcule\s+|qual\s+(?:[eé]\s+)?o\s+resultado\s+de\s+)?"
+    r"-?\d+(?:[.,]\d+)?\s*(?:[\+\-\*\/÷\^]|mais|menos|vezes|dividido\s+por)\s*-?\d+(?:[.,]\d+)?"
+    r"(?:\s*(?:[\+\-\*\/÷\^]|mais|menos|vezes|dividido\s+por)\s*-?\d+(?:[.,]\d+)?)*"
+    r"\s*\??\s*$",
+)
+
+# Strict allowlist for very short multi-turn follow-ups, greetings, order IDs, or payment replies
+SHORT_CONTEXTUAL_ALLOW_RE = re.compile(
+    r"(?i)^\s*(?:"
+    r"#?\d{1,6}"
+    r"|pedido\s*#?\d{1,6}"
+    r"|(?:em\s+|de\s+)?\d{1,2}\s*x(?:\s+sem\s+juros|\s+no\s+cart[ãa]o)?"
+    r"|(?:oi|ol[áa]|opa|e\s*a[íi]|bom\s+dia|boa\s+tarde|boa\s+noite)[!.,\s]*"
+    r"|(?:sim|s|claro|pode|pode\s+ser|pode\s+verificar|pode\s+olhar|isso|isso\s+mesmo|exato|ok|beleza|blz|perfeito|show|combinado)[!.,\s]*"
+    r"|(?:n[ãa]o|nao|n|obrigad[oa]|muito\s+obrigad[oa]|valeu|era\s+s[óo]\s+isso|s[óo]\s+isso)[!.,\s]*"
+    r"|(?:no\s+|via\s+|pelo\s+)?(?:pix|boleto|cart[ãa]o|cr[ée]dito|d[ée]bito|[àa]\s+vista)[!.,\s\?]*"
+    r"|(?:nylon|a[çc]o)[!.,\s\?]*"
+    r")\s*$",
+)
+
+# Explicit domain vocabulary protecting legitimate store/instrument/order queries from false blocks
+STORE_DOMAIN_ANCHOR_RE = re.compile(
+    r"(?i)\b(?:"
+    r"emp[óo]rio\s+da\s+m[úu]sica|viol[ãa]o|viol[õo]es|guitarra|guitarras|baixo|baixos|contrabaixo"
+    r"|bateria|baterias|teclado|teclados|piano|pianos|sintetizador|ukulele|ukuleles|cavaquinho"
+    r"|saxofone|flauta|trompete|violino|gaita|percuss[ãa]o|caj[óo]n|instrumento|instrumentos"
+    r"|corda|cordas|encordoamento|palheta|palhetas|cabo|cabos|pedal|pedais|amplificador|amplificadores|case|bag"
+    r"|takamine|tagima|yamaha|fender|gibson|epiphone|ibanez|taylor|giannini|rozini|shelby|prs|music\s*man|kala|casio|roland|pearl|mapex|strinberg|michael"
+    r"|pedido|pedidos|rastreio|rastreamento|entrega|frete|transportadora|correios|jadlog"
+    r"|troca|trocar|devolu[çc][ãa]o|devolver|arrependimento|reembolso|estorno|garantia|defeito|nota\s+fiscal"
+    r"|estoque|dispon[íi]vel|disponibilidade|cat[áa]logo|promo[çc][ãa]o|promo[çc][õo]es|desconto"
+    r"|parcela|parcelamento|parcelar|boleto|atendente|humano|reclama[çc][ãa]o|protocolo"
+    r"|hor[áa]rio|expediente|endere[çc]o|loja\s+f[íi]sica|campo\s+grande"
+    r")\b",
+)
+
 
 class RouteVerdict(StrEnum):
     """Decision returned by the local semantic intent guardrail."""
@@ -109,11 +149,13 @@ OFF_TOPIC_POLITICS_SPORTS_WEATHER: list[str] = [
 OFF_TOPIC_CODING_MATH_TRIVIA: list[str] = [
     "Escreva um código em Python para fazer web scraping ou ordenar uma lista",
     "Crie uma query SQL com JOIN ou um componente React em JavaScript",
-    "Resolva esta equação de segundo grau e calcule a derivada de x ao quadrado",
-    "Qual é a capital da Austrália e quem descobriu o Brasil?",
-    "Faça uma redação sobre a Revolução Francesa para minha prova da escola",
+    "Resolva esta equação de segundo grau, fórmula ou Teorema de Bhaskara e Pitágoras",
+    "Quanto é 5 mais 5, raiz quadrada, derivada, integral ou cálculo de matemática e física?",
+    "Explique as leis de Newton, tabela periódica de química ou biologia celular",
+    "Qual é a capital da Austrália, da França e quem descobriu o Brasil?",
+    "Faça uma redação sobre a Revolução Francesa ou quem foi Albert Einstein",
     "Traduza este parágrafo inteiro para alemão e japonês",
-    "Me conte uma piada engraçada ou escreva um poema sobre o espaço sideral",
+    "Me conte uma piada engraçada, uma história infantil ou escreva um poema",
 ]
 
 OFF_TOPIC_HEALTH_FINANCE_GOSSIP: list[str] = [
@@ -123,6 +165,13 @@ OFF_TOPIC_HEALTH_FINANCE_GOSSIP: list[str] = [
     "Qual é o meu horóscopo de hoje para o signo de Escorpião?",
     "Qual filme ganhou o Oscar e quais séries estão em alta na Netflix?",
     "Como abrir um processo trabalhista ou divórcio no tribunal?",
+]
+
+OFF_TOPIC_TECH_GADGETS_VEHICLES: list[str] = [
+    "Qual o melhor celular smartphone Samsung Galaxy ou iPhone para comprar hoje?",
+    "Qual placa de vídeo RTX, processador ou notebook gamer você recomenda?",
+    "Como consertar o motor do carro, trocar pneu ou óleo da moto?",
+    "Qual geladeira frost free, ar-condicionado ou máquina de lavar é melhor?",
 ]
 
 ADVERSARIAL_JAILBREAK_UTTERANCES: list[str] = [
@@ -157,42 +206,50 @@ class LocalIntentGuardrail:
     def __init__(
         self,
         embedding_model_name: str = DEFAULT_MULTILINGUAL_MODEL,
-        off_topic_threshold: float = 0.52,
-        adversarial_threshold: float = 0.53,
+        in_scope_min_confidence: float = 0.38,
+        adversarial_threshold: float = 0.48,
     ) -> None:
-        self._off_topic_threshold = off_topic_threshold
+        self._in_scope_min_confidence = in_scope_min_confidence
         self._adversarial_threshold = adversarial_threshold
         encoder = SharedFastEmbedEncoder(name=embedding_model_name)
 
+        # All routes use `confidence_threshold=0.0` inside IndexedRouter so in-scope and
+        # off-topic clusters compete head-to-head by raw cosine similarity without threshold bias.
         routes = [
             Route(
                 name="in_scope_emporio_store",
                 utterances=IN_SCOPE_UTTERANCES,
+                confidence_threshold=0.0,
             ),
             Route(
                 name="off_topic_cooking_lifestyle",
                 utterances=OFF_TOPIC_COOKING_LIFESTYLE,
-                confidence_threshold=off_topic_threshold,
+                confidence_threshold=0.0,
             ),
             Route(
                 name="off_topic_politics_sports_weather",
                 utterances=OFF_TOPIC_POLITICS_SPORTS_WEATHER,
-                confidence_threshold=off_topic_threshold,
+                confidence_threshold=0.0,
             ),
             Route(
                 name="off_topic_coding_math_trivia",
                 utterances=OFF_TOPIC_CODING_MATH_TRIVIA,
-                confidence_threshold=off_topic_threshold,
+                confidence_threshold=0.0,
             ),
             Route(
                 name="off_topic_health_finance_gossip",
                 utterances=OFF_TOPIC_HEALTH_FINANCE_GOSSIP,
-                confidence_threshold=off_topic_threshold,
+                confidence_threshold=0.0,
+            ),
+            Route(
+                name="off_topic_tech_gadgets_vehicles",
+                utterances=OFF_TOPIC_TECH_GADGETS_VEHICLES,
+                confidence_threshold=0.0,
             ),
             Route(
                 name="adversarial_prompt_injection",
                 utterances=ADVERSARIAL_JAILBREAK_UTTERANCES,
-                confidence_threshold=adversarial_threshold,
+                confidence_threshold=0.0,
             ),
         ]
 
@@ -214,9 +271,15 @@ class LocalIntentGuardrail:
                 refusal_reply_pt_br=ADVERSARIAL_REFUSAL_PT_BR,
             )
 
-        # Brief contextual replies (e.g., "Sim", "4", "No PIX", "12x") are always allowed
-        word_count = len(cleaned.split())
-        if word_count <= 3 and len(cleaned) <= 22:
+        if STANDALONE_MATH_RE.match(cleaned):
+            return IntentRouteResult(
+                verdict=RouteVerdict.BLOCK_OUT_OF_SCOPE,
+                matched_route="off_topic_coding_math_trivia",
+                confidence=1.0,
+                refusal_reply_pt_br=OUT_OF_SCOPE_REFUSAL_PT_BR,
+            )
+
+        if SHORT_CONTEXTUAL_ALLOW_RE.match(cleaned):
             return IntentRouteResult(
                 verdict=RouteVerdict.ALLOW_IN_SCOPE,
                 matched_route="short_contextual_followup",
@@ -235,11 +298,14 @@ class LocalIntentGuardrail:
                 refusal_reply_pt_br=ADVERSARIAL_REFUSAL_PT_BR,
             )
 
-        if (
-            route_name is not None
-            and route_name.startswith("off_topic_")
-            and conf >= self._off_topic_threshold
-        ):
+        if STORE_DOMAIN_ANCHOR_RE.search(cleaned):
+            return IntentRouteResult(
+                verdict=RouteVerdict.ALLOW_IN_SCOPE,
+                matched_route="in_scope_emporio_store",
+                confidence=max(conf, 0.5),
+            )
+
+        if route_name is not None and route_name.startswith("off_topic_"):
             return IntentRouteResult(
                 verdict=RouteVerdict.BLOCK_OUT_OF_SCOPE,
                 matched_route=route_name,
@@ -247,8 +313,16 @@ class LocalIntentGuardrail:
                 refusal_reply_pt_br=OUT_OF_SCOPE_REFUSAL_PT_BR,
             )
 
+        if conf < self._in_scope_min_confidence:
+            return IntentRouteResult(
+                verdict=RouteVerdict.BLOCK_OUT_OF_SCOPE,
+                matched_route="low_in_scope_similarity",
+                confidence=conf,
+                refusal_reply_pt_br=OUT_OF_SCOPE_REFUSAL_PT_BR,
+            )
+
         return IntentRouteResult(
             verdict=RouteVerdict.ALLOW_IN_SCOPE,
-            matched_route=route_name or "default_pass_through",
+            matched_route=route_name or "in_scope_emporio_store",
             confidence=conf,
         )
